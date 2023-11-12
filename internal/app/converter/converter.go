@@ -10,22 +10,23 @@ import (
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
 	"golang.org/x/image/font"
-	"golang.org/x/image/font/gofont/goregular"
 	"golang.org/x/image/math/fixed"
 )
 
 type ConvertConfig struct {
-	File         io.Reader
-	Height       int
-	Width        int
-	Out          string
-	FontPath     string
-	FontSize     int
-	AutoEscape   bool
-	PaddingLeft  int
-	LineSpacing  int
-	PaddingTop   int
-	PaddingRight int
+	File          io.Reader
+	Height        int
+	Width         int
+	Out           string
+	FontPath      string
+	FontSize      int
+	AutoEscape    bool
+	PaddingLeft   int
+	LineSpacing   int
+	PaddingTop    int
+	PaddingRight  int
+	PaddingBottom int
+	Font          []byte
 }
 
 func Convert(cfg ConvertConfig) (*bytes.Buffer, error) {
@@ -40,7 +41,7 @@ func Convert(cfg ConvertConfig) (*bytes.Buffer, error) {
 	draw.Draw(thumbnail, thumbnail.Bounds(), &image.Uniform{C: image.White}, image.Point{}, draw.Src)
 
 	// Инициализируем контекст рендеринга FreeType
-	fnt, err := freetype.ParseFont(goregular.TTF)
+	fnt, err := freetype.ParseFont(cfg.Font)
 	if err != nil {
 		return nil, err
 	}
@@ -60,8 +61,12 @@ func Convert(cfg ConvertConfig) (*bytes.Buffer, error) {
 	// Разбиваем текст на строки и рендерим каждую строку
 	// Разбиваем текст на строки и рендерим каждую строку
 	lines := bytes.Split(content, []byte("\n"))
-	y := int(fixed.I(cfg.FontSize).Ceil())
+	y := fixed.I(cfg.FontSize).Ceil()
 	for _, line := range lines {
+		if y > cfg.Height-cfg.PaddingBottom {
+			break
+		}
+
 		// Проверяем, помещается ли строка в оставшееся пространство изображения
 		metrics := font.MeasureString(face, string(line))
 		if metrics.Ceil() > cfg.Width-cfg.PaddingRight-10 { // todo -10 это костыль
@@ -91,7 +96,7 @@ func Convert(cfg ConvertConfig) (*bytes.Buffer, error) {
 		} else {
 			// Строка помещается в оставшееся пространство на текущей строке
 			fntContext.DrawString(string(line), fixed.Point26_6{X: 0, Y: fixed.I(y)})
-			y += int(fixed.I(cfg.FontSize + cfg.LineSpacing).Ceil())
+			y += fixed.I(cfg.FontSize + cfg.LineSpacing).Ceil()
 		}
 	}
 

@@ -318,3 +318,128 @@ Proin ultrices mi nec faucibus bibendum. Donec sagittis dapibus lacus, sit amet 
 Proin ultrices mi nec faucibus bibendum. Donec sagittis dapibus lacus, sit amet porta ipsum hendrerit sit amet. In rutrum, quam eu porta aliquam, neque tortor convallis tortor, at aliquet nulla purus at enim. Curabitur vitae faucibus eros. Nam imperdiet sagittis condimentum. Fusce convallis mi ut rutrum sollicitudin. Fusce dapibus sapien maximus erat aliquam hendrerit. Sed vel mi nec diam cursus interdum vel eget ex.
 Proin ultrices mi nec faucibus bibendum. Donec sagittis dapibus lacus, sit amet porta ipsum hendrerit sit amet. In rutrum, quam eu porta aliquam, neque tortor convallis tortor, at aliquet nulla purus at enim. Curabitur vitae faucibus eros. Nam imperdiet sagittis condimentum. Fusce convallis mi ut rutrum sollicitudin. Fusce dapibus sapien maximus erat aliquam hendrerit. Sed vel mi nec diam cursus interdum vel eget ex.
 Proin ultrices mi nec faucibus bibendum. Donec sagittis dapibus lacus, sit amet porta ipsum hendrerit sit amet. In rutrum, quam eu porta aliquam, neque tortor convallis tortor, at aliquet nulla purus at enim. Curabitur vitae faucibus eros. Nam imperdiet sagittis condimentum. Fusce convallis mi ut rutrum sollicitudin. Fusce dapibus sapien maximus erat aliquam hendrerit. Sed vel mi nec diam cursus interdum vel eget ex.
+
+    # stop all the channels
+    hdawg.setInt('/dev8210/sigouts/0/on',0)
+    hdawg.setInt('/dev8210/sigouts/1/on',0)
+    hdawg.setInt('/dev8210/sigouts/'+str(ch_I)+'/on',0)
+    hdawg.setInt('/dev8210/sigouts/'+str(ch_Q)+'/on',0)
+
+    # configure HDAWG
+    hdawgModule = hdawg.awgModule()
+    hdawgModule.execute()
+
+    hdawgModule.set('awgModule/device', 'dev8210')
+    hdawgModule.set('awgModule/index', 0) # setting of sequencer number
+    hdawgModule.set('awgModule/awg/enable', 0)
+
+    # configure HDAWG triggers
+    hdawg.setInt('/dev8210/awgs/0/auxtriggers/0/slope', 2)
+    hdawg.setInt('/dev8210/triggers/out/1/source', 1)
+    hdawg.setInt('/dev8210/triggers/streams/0/enable', 1)
+    hdawg.setInt('/dev8210/triggers/streams/0/mask', 0x001)
+
+    t1 = time.time()
+
+    probe_res_amp = probe_amp
+    drive_q_amp = drive_amp
+    probe_freq = probe_freq_sweep
+
+    # enable all the channels
+    hdawg.setInt('/dev8210/sigouts/0/on',1)
+    hdawg.setInt('/dev8210/sigouts/1/on',1)
+    hdawg.setInt('/dev8210/sigouts/'+str(ch_I)+'/on',1)
+    hdawg.setInt('/dev8210/sigouts/'+str(ch_Q)+'/on',1)
+
+    for i, p_freq in enumerate(tqdm(probe_freq, disable=False,
+                                    desc="Progress", bar_format='Time elapsed: {elapsed} of {remaining}')):
+
+        print(f'\rIteration: {i+1} of {len(probe_freq_sweep)}, Frequency: {round(p_freq/1e9,9)} GHz, Probe amp = {probe_res_amp}, Drive amp = {drive_q_amp}', end="")
+
+        I = 0.4
+        Q_q = solution_RF_q[0] + solution_RF_q[1]*1j
+        Q_res = solution_RF_res[0] + solution_RF_res[1]*1j
+        dc_q = clip_dc(solution_DC_q[0]+solution_DC_q[1]*1j)
+        dc_res = clip_dc(solution_DC_res[0]+solution_DC_res[1]*1j)
+
+        hdawg.setDouble('/dev8210/sigouts/0/offset', np.real(dc_res))
+        hdawg.setDouble('/dev8210/sigouts/1/offset', np.imag(dc_res))
+        hdawg.setDouble('/dev8210/sigouts/'+str(ch_I)+'/offset', np.real(dc_q))
+        hdawg.setDouble('/dev8210/sigouts/'+str(ch_Q)+'/offset', np.imag(dc_q))
+
+        # waveforms loading and playing in ZI sequencer
+        hdawg_program_res_calib = """
+        wave w3 = "w3";
+        wave w4 = "w4";
+        wave w1 = "w1";
+        wave w2 = "w2";
+        
+        setTrigger(0b0010);
+
+        wait(100);
+
+        while(1)
+        {
+            
+            setTrigger(0b0000);
+            waitDigTrigger(1);
+ 
+            setTrigger(0b0010);
+
+            playWave(1, w3, 2, w4);
+            waitWave();
+            
+            wait("""+str(int(multiple_of_16(5*30e-6*sampling_rate)/8))+""");
+            playWave("""+str(ch_I+1)+""", w1,""" +str(ch_Q+1)+""", w2);                     
+            waitWave();
+        }
+        """
+
+        hdawgModule.set('awgModule/compiler/sourcestring', hdawg_program_res_calib)
+
+        T_while_1 = time.time()
+        deltaT = 0
+
+        while (hdawgModule.get('awgModule/compiler/statusstring')['compiler']['statusstring'][0]. \
+                       find('File successfully uploaded')==-1 \
+               and hdawgModule.get('awgModule/compiler/statusstring')['compiler']['statusstring'][0]. \
+                       find('Compilation failed')==-1 \
+               and (deltaT<30) \
+ \
+                ):
+            deltaT = time.time() - T_while_1
+
+        print("\nHDAWG: compilation and upload time, s: " + str(deltaT))
+
+        if (hdawgModule.get('awgModule/compiler/statusstring')['compiler']['statusstring'][0]. \
+                find('Compilation failed')!=-1):
+            print(hdawgModule.get('awgModule/compiler/statusstring')['compiler']['statusstring'][0])
+            raise Exception("\n\nHDAWG: compilation error:\n")
+        else:
+            hdawgModule.get('awgModule/compiler/statusstring')['compiler']['statusstring'][0]
+
+            cacheMemoryUsage = hdawg.get('/dev8210/awgs/0/waveform/memoryusage') \
+                                   ['dev8210']['awgs']['0']['waveform'] \
+                                   ['memoryusage']['value'][0]*100
+
+
+        print("\nCache memory usage: "+str(cacheMemoryUsage)+" %\n")
+
+        time.sleep(1)
+
+        hdawg.setDouble('/dev8210/awgs/0/outputs/0/amplitude', probe_res_amp)
+        hdawg.setDouble('/dev8210/awgs/0/outputs/1/amplitude', probe_res_amp)
+        hdawg.setDouble('/dev8210/awgs/'+str(awg_num)+'/outputs/0/amplitude', drive_q_amp)
+        hdawg.setDouble('/dev8210/awgs/'+str(awg_num)+'/outputs/1/amplitude', drive_q_amp)
+
+        time.sleep(10)
+
+        hdawgModule.set('awgModule/awg/enable', 0)
+
+
+    # stop all the channels
+    hdawg.setInt('/dev8210/sigouts/0/on',0)
+    hdawg.setInt('/dev8210/sigouts/1/on',0)
+    hdawg.setInt('/dev8210/sigouts/'+str(ch_I)+'/on',0)
+    hdawg.setInt('/dev8210/sigouts/'+str(ch_Q)+'/on',0)
+    hdawg.setInt('/dev8210/awgs/'+str(seq_num)+'/enable', 0)

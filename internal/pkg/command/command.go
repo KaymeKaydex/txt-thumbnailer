@@ -90,7 +90,7 @@ func cmdConvert() *cobra.Command {
 
 func cmdServer() *cobra.Command {
 	return &cobra.Command{
-		Use:   "server [string to print]",
+		Use:   "server [command for server]",
 		Short: "[NOW IS NOT AVAILABLE] Print anything to the screen",
 		Long: `[NOW IS NOT AVAILABLE] print is for printing anything back to the screen.
 For many years people have printed back to the screen.`,
