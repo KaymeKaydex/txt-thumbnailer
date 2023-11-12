@@ -4,8 +4,12 @@
 
 ## Overview
 
-Txt-Thumbnailer is a service providing a simple interface to create thumbnail for txt files
+Txt-Thumbnailer is a service providing a simple interface to create thumbnail for txt files. 
 
+## Examples
+Try to convert 1 of examples files with example font
+
+`$ go run cmd/txt-thumbnailer/main.go convert examples/txt/long.txt  --font-size=16  --padding-left=50 --padding-top=50 --padding-right=50 --padding-bottom=50 --font=examples/fonts/MailSansRoman-Light.ttf`
 ## Installation
 
 ## Usage
