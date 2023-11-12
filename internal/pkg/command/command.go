@@ -1,10 +1,16 @@
 package command
 
 import (
+	"bytes"
 	"fmt"
+	"log"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
+
+	"github.com/KaymeKaydex/txt-thumbnailer/internal/app/converter"
 )
 
 var Commands = []*cobra.Command{
@@ -23,14 +29,47 @@ func cmdConvert() *cobra.Command {
 		},
 	}
 
-	convertCommand.PersistentFlags().Uint("height", 3508, "height of result image")
-	convertCommand.PersistentFlags().Uint("width", 2480, "width of result image")
-	convertCommand.PersistentFlags().String("out", "result.jpg", "~/myimage.jpg")
-	convertCommand.PersistentFlags().String("font", "font.ttf", "~/font.ttf")
-	convertCommand.PersistentFlags().Uint("font-size", 20, "font size for txt symbols")
+	height := convertCommand.PersistentFlags().Int("height", 1100, "height of result image")
+	width := convertCommand.PersistentFlags().Int("width", 700, "width of result image")
+	out := convertCommand.PersistentFlags().String("out", "result.jpg", "~/myimage.jpg")
+	convertCommand.PersistentFlags().String("font", "", "~/font.ttf , default font is goregular.TTF")
+	fontSize := convertCommand.PersistentFlags().Int("font-size", 20, "font size for txt symbols")
 	convertCommand.PersistentFlags().Bool("auto-escape", true, "escapes your txt thumbnail file lines if u need")
-	convertCommand.PersistentFlags().Uint("padding", 10, "padding form border in pixels")
-	convertCommand.PersistentFlags().Uint("line-spacing", 2, "space between lines")
+	lineSpacing := convertCommand.PersistentFlags().Int("line-spacing", 2, "space between lines")
+
+	paddingLeft := convertCommand.PersistentFlags().Int("padding-left", 0, "padding form left border in pixels")
+	paddingTop := convertCommand.PersistentFlags().Int("padding-top", 0, "padding form top border in pixels")
+	paddingRight := convertCommand.PersistentFlags().Int("padding-right", 0, "padding form top border in pixels")
+
+	convertCommand.Run = func(cmd *cobra.Command, args []string) {
+		t := time.Now()
+		file, err := os.ReadFile(args[0])
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		res, err := converter.Convert(converter.ConvertConfig{
+			Height:       *height,
+			Width:        *width,
+			FontSize:     *fontSize,
+			LineSpacing:  *lineSpacing,
+			File:         bytes.NewBuffer(file),
+			PaddingLeft:  *paddingLeft,
+			PaddingTop:   *paddingTop,
+			PaddingRight: *paddingRight,
+		})
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		log.Printf("Thumbnail generated successfully! %s\n", time.Since(t))
+
+		// Сохраняем миниатюру в файловую систему
+		err = os.WriteFile(*out, res.Bytes(), 0644)
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}
 
 	return convertCommand
 }
