@@ -20,11 +20,12 @@ Txt-Thumbnailer is a service providing a simple interface to create thumbnail fo
 - [x] font-size settings
 - [x] height settings
 - [x] line-spacing
+- [x] fonts switch
 
 - [ ] verbose flag
 - [ ] server start
 - [ ] auto-escape
-- [ ] fonts switch
 - [ ] chars escape
 - [ ] DPI settings
-- [ ] skip useless strings for long files
+- [ ] skip useless strings for long files without padding usage
+- [ ] padding bottom correct work (now it ignore one source line from txt file)

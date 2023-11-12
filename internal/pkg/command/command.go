@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/image/font/gofont/goregular"
 
 	"github.com/KaymeKaydex/txt-thumbnailer/internal/app/converter"
 )
@@ -32,7 +33,7 @@ func cmdConvert() *cobra.Command {
 	height := convertCommand.PersistentFlags().Int("height", 1100, "height of result image")
 	width := convertCommand.PersistentFlags().Int("width", 700, "width of result image")
 	out := convertCommand.PersistentFlags().String("out", "result.jpg", "~/myimage.jpg")
-	convertCommand.PersistentFlags().String("font", "", "~/font.ttf , default font is goregular.TTF")
+	fontPath := convertCommand.PersistentFlags().String("font", "", "~/font.ttf , default font is goregular.TTF")
 	fontSize := convertCommand.PersistentFlags().Int("font-size", 20, "font size for txt symbols")
 	convertCommand.PersistentFlags().Bool("auto-escape", true, "escapes your txt thumbnail file lines if u need")
 	lineSpacing := convertCommand.PersistentFlags().Int("line-spacing", 2, "space between lines")
@@ -40,6 +41,7 @@ func cmdConvert() *cobra.Command {
 	paddingLeft := convertCommand.PersistentFlags().Int("padding-left", 0, "padding form left border in pixels")
 	paddingTop := convertCommand.PersistentFlags().Int("padding-top", 0, "padding form top border in pixels")
 	paddingRight := convertCommand.PersistentFlags().Int("padding-right", 0, "padding form top border in pixels")
+	paddingBottom := convertCommand.PersistentFlags().Int("padding-bottom", 0, "padding form top border in pixels")
 
 	convertCommand.Run = func(cmd *cobra.Command, args []string) {
 		t := time.Now()
@@ -48,16 +50,28 @@ func cmdConvert() *cobra.Command {
 			log.Fatalln(err)
 		}
 
-		res, err := converter.Convert(converter.ConvertConfig{
-			Height:       *height,
-			Width:        *width,
-			FontSize:     *fontSize,
-			LineSpacing:  *lineSpacing,
-			File:         bytes.NewBuffer(file),
-			PaddingLeft:  *paddingLeft,
-			PaddingTop:   *paddingTop,
-			PaddingRight: *paddingRight,
-		})
+		cfg := converter.ConvertConfig{
+			Height:        *height,
+			Width:         *width,
+			FontSize:      *fontSize,
+			LineSpacing:   *lineSpacing,
+			File:          bytes.NewBuffer(file),
+			PaddingLeft:   *paddingLeft,
+			PaddingTop:    *paddingTop,
+			PaddingRight:  *paddingRight,
+			PaddingBottom: *paddingBottom,
+			Font:          goregular.TTF,
+		}
+
+		if *fontPath != "" {
+			fontBytes, err := os.ReadFile(*fontPath)
+			if err != nil {
+				log.Fatal(err)
+			}
+			cfg.Font = fontBytes
+		}
+
+		res, err := converter.Convert(cfg)
 		if err != nil {
 			log.Fatalln(err)
 		}
