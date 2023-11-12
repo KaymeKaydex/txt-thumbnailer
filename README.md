@@ -27,3 +27,4 @@ Txt-Thumbnailer is a service providing a simple interface to create thumbnail fo
 - [ ] fonts switch
 - [ ] chars escape
 - [ ] DPI settings
+- [ ] skip useless strings for long files
