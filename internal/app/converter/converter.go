@@ -9,6 +9,7 @@ import (
 
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 )
@@ -17,7 +18,6 @@ type ConvertConfig struct {
 	File          io.Reader
 	Height        int
 	Width         int
-	Out           string
 	FontPath      string
 	FontSize      int
 	AutoEscape    bool
@@ -33,6 +33,8 @@ func Convert(cfg ConvertConfig) (*bytes.Buffer, error) {
 	// Читаем содержимое текстового файла
 	content, err := io.ReadAll(cfg.File)
 	if err != nil {
+		log.Errorf("cant read file from cfg.File with err: %s", err)
+
 		return nil, err
 	}
 

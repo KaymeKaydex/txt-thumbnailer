@@ -1,0 +1,5 @@
+listener:
+  address: :1323
+  log_level: debug
+monitoring:
+  address: 127.0.0.1:8500

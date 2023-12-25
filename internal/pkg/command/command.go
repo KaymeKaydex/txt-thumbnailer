@@ -2,16 +2,15 @@ package command
 
 import (
 	"bytes"
-	"fmt"
 	"log"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/image/font/gofont/goregular"
 
 	"github.com/KaymeKaydex/txt-thumbnailer/internal/app/converter"
+	"github.com/KaymeKaydex/txt-thumbnailer/internal/app/server"
 )
 
 var Commands = []*cobra.Command{
@@ -21,13 +20,11 @@ var Commands = []*cobra.Command{
 
 func cmdConvert() *cobra.Command {
 	convertCommand := &cobra.Command{
-		Use:   "convert [path to txt file to convert]",
-		Short: "convert any txt file to jpg image",
-		Long:  `Convert command can convert any txt file to jpg.`,
-		Args:  cobra.MinimumNArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Echo: " + strings.Join(args, " "))
-		},
+		Use:     "convert [path to txt file to convert]",
+		Short:   "convert any txt file to jpg image",
+		Long:    `Convert command can convert any txt file to jpg.`,
+		Args:    cobra.MinimumNArgs(1),
+		Example: "$ go run cmd/txt-thumbnailer/main.go convert examples/txt/long.txt  --font-size=16  --padding-left=50 --padding-top=50 --padding-right=50 --padding-bottom=50 --font=examples/fonts/MailSansRoman-Light.ttf",
 	}
 
 	height := convertCommand.PersistentFlags().Int("height", 1100, "height of result image")
@@ -89,14 +86,24 @@ func cmdConvert() *cobra.Command {
 }
 
 func cmdServer() *cobra.Command {
-	return &cobra.Command{
+	serverCommand := &cobra.Command{
 		Use:   "server [command for server]",
-		Short: "[NOW IS NOT AVAILABLE] Print anything to the screen",
-		Long: `[NOW IS NOT AVAILABLE] print is for printing anything back to the screen.
-For many years people have printed back to the screen.`,
-		Args: cobra.MinimumNArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Print: " + strings.Join(args, " "))
-		},
+		Short: "Start txt-thumbnailer server",
+		Long:  `Start txt-thumbnailer server. By default config file configs/config.yaml`,
+		Args:  cobra.MinimumNArgs(0),
 	}
+
+	cfg := serverCommand.PersistentFlags().String("config", "configs/config.yaml", "config file for server")
+	if cfg == nil || *cfg == "" {
+		log.Fatalln("cant get config param from args")
+	}
+
+	serverCommand.Run = func(cmd *cobra.Command, args []string) {
+		err := server.StartServer()
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}
+
+	return serverCommand
 }
