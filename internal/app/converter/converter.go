@@ -61,7 +61,6 @@ func Convert(cfg ConvertConfig) (*bytes.Buffer, error) {
 	})
 
 	// Разбиваем текст на строки и рендерим каждую строку
-	// Разбиваем текст на строки и рендерим каждую строку
 	lines := bytes.Split(content, []byte("\n"))
 	y := fixed.I(cfg.FontSize).Ceil()
 	for _, line := range lines {
@@ -94,7 +93,7 @@ func Convert(cfg ConvertConfig) (*bytes.Buffer, error) {
 			}
 			// Рендерим оставшуюся строку
 			fntContext.DrawString(string(currentLine), fixed.Point26_6{X: 0, Y: fixed.I(y)})
-			y += int(fixed.I(cfg.FontSize + cfg.LineSpacing).Ceil())
+			y += fixed.I(cfg.FontSize + cfg.LineSpacing).Ceil()
 		} else {
 			// Строка помещается в оставшееся пространство на текущей строке
 			fntContext.DrawString(string(line), fixed.Point26_6{X: 0, Y: fixed.I(y)})
@@ -105,5 +104,6 @@ func Convert(cfg ConvertConfig) (*bytes.Buffer, error) {
 	b := bytes.NewBuffer([]byte{})
 
 	jpeg.Encode(b, thumbnail, nil)
+
 	return b, nil
 }
