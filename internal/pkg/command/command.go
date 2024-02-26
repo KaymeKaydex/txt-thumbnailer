@@ -21,7 +21,7 @@ var Commands = []*cobra.Command{
 func cmdConvert() *cobra.Command {
 	convertCommand := &cobra.Command{
 		Use:     "convert [path to txt file to convert]",
-		Short:   "convert any txt file to jpg image",
+		Short:   "Convert any txt file to jpg image",
 		Long:    `Convert command can convert any txt file to jpg.`,
 		Args:    cobra.MinimumNArgs(1),
 		Example: "$ go run cmd/txt-thumbnailer/main.go convert examples/txt/long.txt  --font-size=16  --padding-left=50 --padding-top=50 --padding-right=50 --padding-bottom=50 --font=examples/fonts/MailSansRoman-Light.ttf",
@@ -73,7 +73,7 @@ func cmdConvert() *cobra.Command {
 			log.Fatalln(err)
 		}
 
-		log.Printf("Thumbnail generated successfully! %s\n", time.Since(t))
+		log.Printf("Thumbnail generated successfully in %s!\n", time.Since(t))
 
 		// Сохраняем миниатюру в файловую систему
 		err = os.WriteFile(*out, res.Bytes(), 0644)
