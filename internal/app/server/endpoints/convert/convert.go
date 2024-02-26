@@ -10,10 +10,19 @@ import (
 	"golang.org/x/image/font/gofont/goregular"
 
 	"github.com/KaymeKaydex/txt-thumbnailer/internal/app/converter"
+	"github.com/KaymeKaydex/txt-thumbnailer/internal/app/server/models"
 )
 
 func (c *Controller) ToTxt(eCtx echo.Context) error {
 	var err error
+
+	if eCtx.Request().Body == nil {
+		return eCtx.JSON(http.StatusBadRequest, models.BadResponse{Error: "no file in request"})
+	}
+
+	if eCtx.Request().Header.Get("Content-Type") != "text/plain" {
+		return eCtx.JSON(http.StatusBadRequest, models.BadResponse{Error: "bad content-type"})
+	}
 
 	// get fontSize
 	fontSizeInt := 20
@@ -50,18 +59,7 @@ func (c *Controller) ToTxt(eCtx echo.Context) error {
 			return err
 		}
 	}
-	/*
-		todo
-			// check font
-			fontBts := make([]byte, 0)
 
-			font := eCtx.QueryParam("font")
-			if font == "" {
-				fontBts = goregular.TTF
-			}
-
-
-	*/
 	image, err := converter.Convert(converter.ConvertConfig{
 		File:          eCtx.Request().Body,
 		Font:          goregular.TTF,

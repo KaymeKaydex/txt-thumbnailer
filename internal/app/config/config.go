@@ -67,7 +67,7 @@ func New(ctx context.Context, fPath string) (*Config, error) {
 
 	viper.OnConfigChange(cfg.onConfigChange)
 
-	log.Info("config parsed")
+	log.WithContext(ctx).Infof("config parsed from %s", fPath)
 	return cfg, nil
 }
 

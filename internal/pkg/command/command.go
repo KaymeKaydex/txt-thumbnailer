@@ -2,13 +2,16 @@ package command
 
 import (
 	"bytes"
+	"context"
 	"log"
 	"os"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/image/font/gofont/goregular"
 
+	"github.com/KaymeKaydex/txt-thumbnailer/internal/app/config"
 	"github.com/KaymeKaydex/txt-thumbnailer/internal/app/converter"
 	"github.com/KaymeKaydex/txt-thumbnailer/internal/app/server"
 )
@@ -86,6 +89,11 @@ func cmdConvert() *cobra.Command {
 }
 
 func cmdServer() *cobra.Command {
+	ctx := context.Background()
+	logger := logrus.New()
+
+	ctx = logger.WithContext(ctx).Context
+
 	serverCommand := &cobra.Command{
 		Use:   "server [command for server]",
 		Short: "Start txt-thumbnailer server",
@@ -93,13 +101,19 @@ func cmdServer() *cobra.Command {
 		Args:  cobra.MinimumNArgs(0),
 	}
 
-	cfg := serverCommand.PersistentFlags().String("config", "configs/config.yaml", "config file for server")
-	if cfg == nil || *cfg == "" {
+	cfgPath := serverCommand.PersistentFlags().String("config", "configs/config.yaml", "config file for server")
+	if cfgPath == nil || *cfgPath == "" {
 		log.Fatalln("cant get config param from args")
 	}
 
+	cfg, err := config.New(ctx, *cfgPath)
+	if err != nil {
+		log.Fatalf("cant get config from path %s", *cfgPath)
+	}
+	ctx = config.WrapContext(ctx, cfg)
+
 	serverCommand.Run = func(cmd *cobra.Command, args []string) {
-		err := server.StartServer()
+		err := server.StartServer(ctx)
 		if err != nil {
 			log.Fatalln(err)
 		}
